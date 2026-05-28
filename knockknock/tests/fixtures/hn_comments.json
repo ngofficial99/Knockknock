@@ -1,0 +1,27 @@
+{
+  "id": 9000001,
+  "title": "Ask HN: Who is hiring? (May 2026)",
+  "children": [
+    {
+      "id": 9000010,
+      "author": "founder1",
+      "created_at_i": 1746090000,
+      "text": "Acme Labs (acme.test) | Backend Engineer | Bengaluru, ONSITE | Full-time<p>We are hiring backend engineers in Bangalore. Stack: Python, Postgres, Kafka. Apply at <a href=\"https://acme.test/jobs/be\">https://acme.test/jobs/be</a></p>",
+      "children": []
+    },
+    {
+      "id": 9000011,
+      "author": "founder2",
+      "created_at_i": 1746090500,
+      "text": "BetaCo | Frontend Engineer | REMOTE (US only)<p>Sorry, US-only. https://beta.test/jobs/fe</p>",
+      "children": []
+    },
+    {
+      "id": 9000012,
+      "author": "founder3",
+      "created_at_i": 1746090700,
+      "text": "Just a comment, not a job posting",
+      "children": []
+    }
+  ]
+}
