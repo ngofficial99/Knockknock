@@ -76,4 +76,6 @@ test-results/
 
 # Build outputs
 *.pdf
-!docs/**/*.pdf
+
+# Documentation & specs (kept locally / published in Obsidian, not in the repo)
+docs/
