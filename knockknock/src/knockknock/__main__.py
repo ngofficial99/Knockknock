@@ -30,18 +30,23 @@ def version() -> None:
 def pipeline_run(
     once: bool = typer.Option(False, "--once", help="Run a single pipeline pass and exit."),
 ) -> None:
-    """Run the discovery/score/draft pipeline.
+    """Run the discovery → pre_filter pipeline (more stages added in later phases).
 
-    Wires Phase-3 stages (currently: discover) inside a single
-    ``session_scope`` transaction so commit/rollback is atomic per run.
+    Wires Phase-3 + Phase-4 stages inside a single ``session_scope``
+    transaction so commit/rollback is atomic per run. Before stages run, the
+    blacklist YAML is synced into ``companies_blacklist`` and a
+    ``BlacklistMatcher`` snapshot is loaded for the ``RuleEngine``.
     """
     from knockknock.config.preferences import load_preferences
     from knockknock.config.settings import Settings
     from knockknock.db.engine import make_sync_engine
     from knockknock.db.session import session_scope
+    from knockknock.filter.blacklist import BlacklistMatcher, sync_blacklist_from_yaml
+    from knockknock.filter.rules import RuleEngine
     from knockknock.logging import configure_logging
     from knockknock.observability.metrics import begin_run, finalize_run
     from knockknock.pipeline.discover import DiscoverStage
+    from knockknock.pipeline.pre_filter import PreFilterStage
     from knockknock.pipeline.runner import PipelineRunner
     from knockknock.pipeline.stage import Stage, StageContext
     from knockknock.scrapers.registry import build_scrapers
@@ -52,6 +57,10 @@ def pipeline_run(
     engine = make_sync_engine(settings.database_url)
 
     with session_scope(engine) as session:
+        sync_blacklist_from_yaml(session, Path(settings.blacklist_path))
+        matcher = BlacklistMatcher.load(session)
+        rule_engine = RuleEngine(prefs=prefs, blacklist_pattern=matcher.match)
+
         run_id = begin_run(session)
         scrapers = build_scrapers(prefs)
         stages: list[Stage] = [
@@ -60,6 +69,7 @@ def pipeline_run(
                 scrapers=scrapers,
                 hourly_cap=prefs.limits.hourly_discover_cap,
             ),
+            PreFilterStage(session=session, engine=rule_engine),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
