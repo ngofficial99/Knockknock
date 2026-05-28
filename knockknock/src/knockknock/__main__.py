@@ -37,9 +37,12 @@ def pipeline_run(
     blacklist YAML is synced into ``companies_blacklist`` and a
     ``BlacklistMatcher`` snapshot is loaded for the ``RuleEngine``.
     """
+    from knockknock.clients.gemini import build_gemini_client
     from knockknock.config.preferences import load_preferences
+    from knockknock.config.secrets import build_secrets_client
     from knockknock.config.settings import Settings
     from knockknock.db.engine import make_sync_engine
+    from knockknock.db.enums import GeminiModel
     from knockknock.db.session import session_scope
     from knockknock.filter.blacklist import BlacklistMatcher, sync_blacklist_from_yaml
     from knockknock.filter.rules import RuleEngine
@@ -48,7 +51,13 @@ def pipeline_run(
     from knockknock.pipeline.discover import DiscoverStage
     from knockknock.pipeline.pre_filter import PreFilterStage
     from knockknock.pipeline.runner import PipelineRunner
+    from knockknock.pipeline.score import ScoreStage
     from knockknock.pipeline.stage import Stage, StageContext
+    from knockknock.rate_limit.gemini_limiter import (
+        GeminiLimiter,
+        LimiterConfig,
+        ModelQuota,
+    )
     from knockknock.scrapers.registry import build_scrapers
 
     settings = Settings()
@@ -56,10 +65,28 @@ def pipeline_run(
     prefs = load_preferences(Path(settings.preferences_path))
     engine = make_sync_engine(settings.database_url)
 
+    # Gemini client is built outside the session_scope because it owns no DB
+    # state and the SDK import is ~250ms; doing it once amortises it.
+    secrets = build_secrets_client(settings)
+    gemini_client = build_gemini_client(secrets.get("gemini-api-key"))
+
     with session_scope(engine) as session:
         sync_blacklist_from_yaml(session, Path(settings.blacklist_path))
         matcher = BlacklistMatcher.load(session)
         rule_engine = RuleEngine(prefs=prefs, blacklist_pattern=matcher.match)
+
+        # Limiter is bound to THIS session so its reads see the same
+        # in-transaction state as the score stage writes to gemini_call_logs.
+        limiter_config = LimiterConfig(
+            safety_ceiling_rpd=prefs.limits.gemini_pro_rpd_ceiling,
+            quotas={
+                # Google free-tier Flash: 15 RPM, 1M TPM, 1500 RPD.
+                GeminiModel.FLASH_2_5: ModelQuota(rpm=15, tpm=1_000_000, rpd=1500),
+                # Google free-tier Pro:    2 RPM, 32k TPM, 50 RPD.
+                GeminiModel.PRO_2_5: ModelQuota(rpm=2, tpm=32_000, rpd=50),
+            },
+        )
+        gemini_limiter = GeminiLimiter(session, limiter_config)
 
         run_id = begin_run(session)
         scrapers = build_scrapers(prefs)
@@ -70,6 +97,12 @@ def pipeline_run(
                 hourly_cap=prefs.limits.hourly_discover_cap,
             ),
             PreFilterStage(session=session, engine=rule_engine),
+            ScoreStage(
+                session=session,
+                prefs=prefs,
+                gemini=gemini_client,
+                limiter=gemini_limiter,
+            ),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
