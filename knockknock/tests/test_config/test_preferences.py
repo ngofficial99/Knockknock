@@ -23,6 +23,7 @@ def test_scoring_weights_must_sum_to_100() -> None:
             {
                 "candidate": {
                     "name": "x",
+                    "email": "x@example.com",
                     "current_role": "x",
                     "years_experience": 1,
                     "location": "x",
@@ -71,6 +72,7 @@ def test_invalid_company_size_rejected() -> None:
             {
                 "candidate": {
                     "name": "x",
+                    "email": "x@example.com",
                     "current_role": "x",
                     "years_experience": 1,
                     "location": "x",

@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from knockknock.db.enums import CompanySizeBucket
 from knockknock.exceptions import ConfigError
@@ -19,9 +19,19 @@ from knockknock.exceptions import ConfigError
 class Candidate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str
+    # Outbound signature address — appears in the email body and is the
+    # ``From:`` on the Gmail draft created by Phase 8. Required because
+    # we refuse to send anonymous cold emails. Validated as ``EmailStr``
+    # so an obviously bad value fails at preferences-load time, not at
+    # the Gmail API boundary.
+    email: EmailStr
     current_role: str
     years_experience: int = Field(ge=0, le=50)
     location: str
+    # Optional one-line elevator pitch fed into the Pro draft prompt. Kept
+    # optional so the existing test fixture / minimal YAML still validates;
+    # when absent the prompt falls back to ``current_role`` + experience.
+    pitch: str | None = None
 
 
 class Target(BaseModel):

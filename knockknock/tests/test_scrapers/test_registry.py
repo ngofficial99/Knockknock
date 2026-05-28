@@ -10,7 +10,7 @@ from knockknock.scrapers.registry import build_scrapers
 
 def test_build_scrapers_returns_only_enabled(tmp_path: Path) -> None:
     prefs_text = """
-candidate: {name: x, current_role: x, years_experience: 1, location: x}
+candidate: {name: x, email: "x@example.com", current_role: x, years_experience: 1, location: x}
 target:
   locations: [x]
   titles_allow: [x]

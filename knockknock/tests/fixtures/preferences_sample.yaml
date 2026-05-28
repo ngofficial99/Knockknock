@@ -1,5 +1,6 @@
 candidate:
   name: "Test User"
+  email: "test.user@example.com"
   current_role: "Engineer"
   years_experience: 3
   location: "Bengaluru"

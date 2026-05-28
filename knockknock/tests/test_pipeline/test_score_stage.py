@@ -85,6 +85,7 @@ def _prefs() -> JobPreferences:
         {
             "candidate": {
                 "name": "Test User",
+                "email": "test.user@example.com",
                 "current_role": "Backend Engineer",
                 "years_experience": 4,
                 "location": "Bengaluru",

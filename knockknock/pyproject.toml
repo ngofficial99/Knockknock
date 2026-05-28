@@ -28,6 +28,7 @@ dependencies = [
     "structlog>=24.2",
     "rich>=13.7",
     "pyyaml>=6.0",
+    "email-validator>=2.3.0",
 ]
 
 [project.optional-dependencies]

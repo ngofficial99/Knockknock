@@ -20,6 +20,7 @@ def _prefs() -> JobPreferences:
         {
             "candidate": {
                 "name": "x",
+                "email": "x@example.com",
                 "current_role": "x",
                 "years_experience": 4,
                 "location": "Bengaluru",

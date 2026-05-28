@@ -1,8 +1,15 @@
 candidate:
   name: "Nishant Gupta"
-  current_role: "Backend Engineer at Zeotap"
-  years_experience: 4
+  # Outbound signature address — used as ``From:`` on Gmail drafts (Phase 8).
+  # Must match the Gmail account whose OAuth refresh token is configured.
+  # NOTE: Gmail appends its own signature automatically; the Phase 8 prompt
+  # therefore does NOT generate a sign-off block in the body.
+  email: "ngofficial99@gmail.com"
+  current_role: "Software Engineer at Zeotap (Platform Engineering)"
+  years_experience: 2
   location: "Bengaluru, India"
+  # Optional one-line elevator pitch fed into the Pro draft prompt.
+  pitch: "Backend engineer on Zeotap's Platform team — high-throughput, reactive distributed systems in Java (Vert.x) and Python (FastAPI) on GCP."
 
 target:
   locations:
