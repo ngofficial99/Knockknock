@@ -3,12 +3,14 @@
     {
       "objectID": "9000001",
       "title": "Ask HN: Who is hiring? (May 2026)",
-      "created_at_i": 1746086400
+      "created_at_i": 1746086400,
+      "created_at": "2026-05-01T15:00:00Z"
     },
     {
       "objectID": "8999000",
       "title": "Ask HN: Who is hiring? (April 2026)",
-      "created_at_i": 1743408000
+      "created_at_i": 1743408000,
+      "created_at": "2026-04-01T15:00:00Z"
     }
   ]
 }
