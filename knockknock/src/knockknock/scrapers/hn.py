@@ -25,6 +25,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from knockknock.db.enums import CompanySizeBucket, JobSource
 from knockknock.exceptions import ExternalServiceError
+from knockknock.scrapers._salary import parse_salary_from_text
 from knockknock.scrapers.base import ScrapedJob
 
 ALGOLIA = "https://hn.algolia.com/api/v1"
@@ -146,6 +147,12 @@ class HNScraper:
         body_text = (tree.text(separator=" ") or "").strip()
         posted_at = datetime.fromtimestamp(comment.get("created_at_i", 0), tz=UTC)
 
+        # Best-effort salary extraction from the comment body. Falls back to
+        # all-None when nothing parseable is found, which is the common case
+        # for HN. The full text (header + body) is scanned because some posts
+        # put comp inline in the header (e.g. "Acme | Eng | $150k-200k").
+        salary = parse_salary_from_text(full_text)
+
         return ScrapedJob(
             source=JobSource.HN,
             source_job_id=str(comment["id"]),
@@ -157,4 +164,9 @@ class HNScraper:
             apply_url=apply_url,
             description=body_text,
             posted_at=posted_at,
+            salary_min=salary.min_amount if salary else None,
+            salary_max=salary.max_amount if salary else None,
+            salary_currency=salary.currency if salary else None,
+            salary_period=salary.period if salary else None,
+            salary_raw=salary.raw if salary else None,
         )

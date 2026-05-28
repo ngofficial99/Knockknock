@@ -79,6 +79,12 @@ class DiscoverStage:
                 description=job.description,
                 posted_at=job.posted_at,
                 status=JobStatus.DISCOVERED,
+                # Best-effort salary capture (any/all may be NULL).
+                salary_min=job.salary_min,
+                salary_max=job.salary_max,
+                salary_currency=job.salary_currency,
+                salary_period=job.salary_period,
+                salary_raw=job.salary_raw,
             )
             .on_conflict_do_nothing(constraint="jobs_source_unique")
             .returning(table.c.id)

@@ -55,6 +55,15 @@ class JobApplication(SQLModel, table=True):
         )
     )
     score: int | None = Field(default=None, sa_column=Column(SmallInteger))
+    # Salary capture (best-effort). All nullable; populated when a scraper
+    # can extract structured comp from the source. Soft signal for scoring,
+    # NOT a hard pre-filter gate. See ``scrapers/_salary.py`` and migration
+    # ``0002_add_salary_fields.py``.
+    salary_min: int | None = Field(default=None, sa_column=Column(BigInteger))
+    salary_max: int | None = Field(default=None, sa_column=Column(BigInteger))
+    salary_currency: str | None = Field(default=None, sa_column=Column(Text))
+    salary_period: str | None = Field(default=None, sa_column=Column(Text))
+    salary_raw: str | None = Field(default=None, sa_column=Column(Text))
     rejection_reason: RejectionReason | None = Field(
         default=None,
         sa_column=Column(pg_enum(RejectionReason, "rejection_reason")),

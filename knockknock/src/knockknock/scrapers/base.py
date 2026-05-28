@@ -24,7 +24,13 @@ def _normalise_domain(value: str) -> str:
 
 @dataclass(frozen=True, slots=True)
 class ScrapedJob:
-    """Normalised payload that every scraper yields."""
+    """Normalised payload that every scraper yields.
+
+    Salary fields are *best-effort* and may all be ``None`` — they are
+    used as a soft scoring signal downstream, not a hard pre-filter gate.
+    ``salary_raw`` retains the unparsed source substring so an auditor can
+    sanity-check what the extractor matched against.
+    """
 
     source: JobSource
     source_job_id: str
@@ -37,6 +43,11 @@ class ScrapedJob:
     description: str
     posted_at: datetime | None
     tags: list[str] = field(default_factory=list)
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str | None = None  # "USD" / "INR" / "EUR" / "GBP"
+    salary_period: str | None = None  # "annual" / "monthly" / "hourly"
+    salary_raw: str | None = None
 
     def __post_init__(self) -> None:
         if not self.apply_url:
