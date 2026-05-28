@@ -157,3 +157,82 @@ def test_rejects_when_company_domain_is_generic_redirector(engine: RuleEngine, d
     assert not verdict.passed
     assert verdict.reason == RejectionReason.OTHER
     assert "generic-redirector" in (verdict.detail or "")
+
+
+# ---- Feedback-loop tuning (2026-05-28): token-boundary matcher + rule order ----
+
+
+def _prefs_single_token() -> JobPreferences:
+    """Prefs that exercise the new single-token allow list."""
+    base = _prefs().model_dump()
+    base["target"]["titles_allow"] = ["Engineer", "Developer", "SDE", "SWE"]
+    base["target"]["titles_deny"] = ["Manager", "Lead", "Director", "Intern", "Frontend"]
+    return JobPreferences.model_validate(base)
+
+
+@pytest.fixture
+def engine_single_token() -> RuleEngine:
+    return RuleEngine(prefs=_prefs_single_token(), blacklist_pattern=lambda name, domain: None)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Senior Engineer",
+        "Founding Engineer",
+        "Senior Full-Stack Engineer",
+        "Site Reliability Engineer",
+        "Backend Developer",
+        "SDE 2",
+        "Staff SWE",
+    ],
+)
+def test_token_match_allows_legit_engineering_titles(
+    engine_single_token: RuleEngine, title: str
+) -> None:
+    """Whole-word allow tokens must match common HN role phrasings."""
+    verdict = engine_single_token.evaluate(_job(title=title), _company())
+    assert verdict.passed, f"{title!r} should pass; got {verdict.reason}/{verdict.detail}"
+
+
+def test_token_match_does_not_leak_engineering_substring(
+    engine_single_token: RuleEngine,
+) -> None:
+    """``Engineering Manager`` must not slip past the allow list via substring.
+
+    The deny list catches ``Manager`` first, so we exercise a title that
+    contains ``Engineering`` but no allow-token word and no deny token:
+    if the matcher were substring-based, ``Engineer`` would match
+    ``Engineering`` and let it through.
+    """
+    verdict = engine_single_token.evaluate(_job(title="Engineering Operations"), _company())
+    assert not verdict.passed
+    assert verdict.reason == RejectionReason.ROLE_MISMATCH
+    assert verdict.detail == "title not in allow list"
+
+
+def test_rule_order_location_fires_before_title_allow(
+    engine_single_token: RuleEngine,
+) -> None:
+    """A legit Engineer role in the wrong region must surface as LOCATION_MISMATCH,
+    not ROLE_MISMATCH. This is the feedback-loop telemetry change."""
+    verdict = engine_single_token.evaluate(
+        _job(title="Senior Engineer", location="San Francisco, CA"),
+        _company(),
+    )
+    assert not verdict.passed
+    assert verdict.reason == RejectionReason.LOCATION_MISMATCH
+
+
+def test_rule_order_deny_still_fires_before_location(
+    engine_single_token: RuleEngine,
+) -> None:
+    """Deny still wins over location -- so a ``Engineering Manager`` based in
+    Bengaluru is ROLE_MISMATCH, not a pass."""
+    verdict = engine_single_token.evaluate(
+        _job(title="Engineering Manager", location="Bengaluru"),
+        _company(),
+    )
+    assert not verdict.passed
+    assert verdict.reason == RejectionReason.ROLE_MISMATCH
+    assert "deny title" in (verdict.detail or "")

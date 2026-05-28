@@ -9,14 +9,21 @@ Rule order (first hit wins):
 2.  data-quality: title looks like a location header (audit finding)
 3.  data-quality: company_domain is a generic redirector (audit finding)
 4.  title deny list
-5.  title allow list
-6.  location must match at least one configured location
+5.  location must match at least one configured location
+6.  title allow list (token-boundary match so single-word tokens like
+    "Engineer"/"Developer" hit "Senior Engineer", "Founding Engineer", etc.)
 7.  description must contain at least one ``skills.must_have_any`` token
 8.  company.size_bucket must be in ``target.company_size_allow``
+
+Order rationale (feedback-loop tuning 2026-05-28): location now precedes
+title-allow so rejection telemetry surfaces region mismatches before role
+mismatches. This is purely analytical -- pass/fail outcomes are unchanged
+because all hard rules still gate advance.
 """
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -64,6 +71,19 @@ class RuleVerdict:
 BlacklistFn = Callable[[str, str], str | None]
 
 
+def _token_match(haystack: str, needle: str) -> bool:
+    """Whole-word case-insensitive match of ``needle`` within ``haystack``.
+
+    Uses ``\\b`` word boundaries so single-token entries like ``Engineer``
+    match ``Senior Engineer`` / ``Founding Engineer`` but do NOT match a
+    substring like ``Engineering`` (which is desirable: keeps ``Engineering
+    Manager`` from sneaking past via the allow list -- the deny list catches
+    it earlier anyway, this is belt-and-braces).
+    """
+    pattern = r"\b" + re.escape(needle.lower()) + r"\b"
+    return re.search(pattern, haystack) is not None
+
+
 @dataclass(frozen=True, slots=True)
 class RuleEngine:
     """Applies hard rules. No DB writes; caller mutates state from the verdict."""
@@ -92,15 +112,15 @@ class RuleEngine:
             )
 
         for deny in self.prefs.target.titles_deny:
-            if deny.lower() in title_lower:
+            if _token_match(title_lower, deny):
                 return RuleVerdict(False, RejectionReason.ROLE_MISMATCH, f"deny title: {deny}")
-
-        if not any(allow.lower() in title_lower for allow in self.prefs.target.titles_allow):
-            return RuleVerdict(False, RejectionReason.ROLE_MISMATCH, "title not in allow list")
 
         location_lower = job.location.lower()
         if not any(loc.lower() in location_lower for loc in self.prefs.target.locations):
             return RuleVerdict(False, RejectionReason.LOCATION_MISMATCH, job.location)
+
+        if not any(_token_match(title_lower, allow) for allow in self.prefs.target.titles_allow):
+            return RuleVerdict(False, RejectionReason.ROLE_MISMATCH, "title not in allow list")
 
         description_lower = job.description.lower()
         title_plus_desc = f"{title_lower}\n{description_lower}"

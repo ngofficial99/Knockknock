@@ -9,18 +9,26 @@ target:
     - "Bengaluru"
     - "Bangalore"
     - "Remote (India)"
+  # Token-boundary match (see filter/rules.py:_token_match). Single-word
+  # tokens like "Engineer" hit "Senior Engineer", "Founding Engineer", etc.
+  # without matching "Engineering" (substring would).
   titles_allow:
-    - "Software Engineer"
-    - "Software Development Engineer"
-    - "Backend Engineer"
-    - "Full Stack Engineer"
-    - "Platform Engineer"
+    - "Engineer"
+    - "Developer"
+    - "SDE"
+    - "SWE"
+    - "Programmer"
   titles_deny:
     - "Manager"
     - "Lead"
     - "Director"
     - "Intern"
-    - "Frontend Engineer"
+    - "Frontend"
+    - "Front-End"
+    - "Mobile"
+    - "iOS"
+    - "Android"
+    - "Designer"
   seniority_allow:
     - "Mid"
     - "Senior"
