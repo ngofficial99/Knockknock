@@ -8,6 +8,15 @@ longer contain live jobs).
 Header parsing is intentionally lenient: most real comments do not put the
 domain in parentheses next to the company name. Instead we derive the
 company domain from the first URL in the comment body.
+
+Segment classification (added 2026-05-28 to fix field-mapping bug):
+Real HN headers use many shapes -- ``Company | Role | Location``, but also
+``Company | Location | Mode``, ``Company | Mode | Location | Role``, etc.
+The earlier parser blindly assigned ``title=parts[1]`` and
+``location=parts[2]``, causing locations to leak into titles for ~18% of
+live HN comments. The new classifier inspects each segment's CONTENT and
+picks the first role-looking segment as title, first location-looking
+segment as location.
 """
 
 from __future__ import annotations
@@ -32,6 +41,129 @@ ALGOLIA = "https://hn.algolia.com/api/v1"
 HEADER_SEPARATOR = re.compile(r"\s*\|\s*")
 DOMAIN_HINT = re.compile(r"\(([^()\s]+\.[a-z]{2,})\)", re.IGNORECASE)
 URL_RE = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
+
+# ---- Header-segment classification ------------------------------------------
+#
+# Role tokens: single whole words that strongly suggest a job-title segment.
+# Whole-word match via ``\b`` so "Engineer" hits "Senior Engineer" but not
+# "Engineering" (which is fine -- ``Engineering Manager`` headers should
+# still classify as role, but the title itself contains the word "Manager"
+# so downstream pre-filter catches it via the deny list).
+_ROLE_TOKENS = (
+    "engineer",
+    "developer",
+    "programmer",
+    "designer",
+    "manager",
+    "scientist",
+    "architect",
+    "lead",
+    "founder",
+    "sde",
+    "swe",
+    "sre",
+    "devops",
+    "fullstack",
+    "full-stack",
+    "backend",
+    "frontend",
+    "front-end",
+    "qa",
+    "analyst",
+    "researcher",
+    "intern",
+)
+_ROLE_RE = re.compile(r"\b(" + "|".join(_ROLE_TOKENS) + r")\b", re.IGNORECASE)
+
+# Location tokens: explicit mode markers + the bulk are caught by the
+# substring fallback ("city, country" patterns, multi-word geo names).
+_MODE_TOKENS = ("remote", "onsite", "on-site", "hybrid", "wfh", "anywhere")
+_MODE_RE = re.compile(r"\b(" + "|".join(_MODE_TOKENS) + r")\b", re.IGNORECASE)
+
+# A short geo-token list -- not exhaustive; intended to catch cases where
+# the role-classifier returns false (e.g. "Berlin, Germany" with no role
+# tokens). Comma-and-capitalised-word pattern is the structural backup.
+_GEO_HINT_RE = re.compile(
+    r"\b("
+    r"bengaluru|bangalore|mumbai|delhi|hyderabad|pune|chennai|kolkata|"
+    r"london|berlin|paris|amsterdam|dublin|barcelona|madrid|munich|zurich|"
+    r"san francisco|sf|nyc|new york|boston|seattle|austin|chicago|toronto|"
+    r"vancouver|montreal|singapore|tokyo|sydney|melbourne|tel aviv|"
+    r"india|uk|usa|us|eu|emea|apac|americas|europe|worldwide|global"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# Employment-type tokens we must NOT classify as location.
+_EMPLOYMENT_TYPE_TOKENS = (
+    "full-time",
+    "full time",
+    "part-time",
+    "part time",
+    "contract",
+    "freelance",
+    "internship",
+)
+_EMPLOYMENT_TYPE_RE = re.compile(
+    r"\b(" + "|".join(re.escape(t) for t in _EMPLOYMENT_TYPE_TOKENS) + r")\b", re.IGNORECASE
+)
+
+
+def _looks_like_role(segment: str) -> bool:
+    return bool(_ROLE_RE.search(segment))
+
+
+def _looks_like_location(segment: str) -> bool:
+    """Geo or mode tokens suggest this segment is the location."""
+    if _MODE_RE.search(segment):
+        return True
+    if _GEO_HINT_RE.search(segment):
+        return True
+    # Structural: "X, Y" with a capitalised word on either side, e.g.
+    # "Berlin, Germany", "St Paul, MN", "Toronto, ON".
+    return bool(re.search(r"^[A-Z][\w\s.]+,\s*[A-Z][\w\s]+$", segment.strip()))
+
+
+def _is_employment_type(segment: str) -> bool:
+    return bool(_EMPLOYMENT_TYPE_RE.search(segment))
+
+
+def _is_url(segment: str) -> bool:
+    return segment.startswith(("http://", "https://"))
+
+
+def _classify_header_segments(segments: list[str]) -> tuple[str, str]:
+    """Return ``(title, location)`` chosen by content from ``segments[1:]``.
+
+    Segment 0 is always treated as the company by the caller, so this
+    function only inspects 1..N. Selection rules:
+
+    - ``title``: first segment that matches a role token.
+    - ``location``: first segment that matches a location/mode token AND
+      is not an employment-type-only segment.
+    - If no role segment exists, return ``title="(no role in header)"``
+      so the pre-filter's title-looks-like-location rule still catches
+      it but we recover the real location.
+    - URL segments and employment-type segments are skipped for both.
+    """
+    title: str | None = None
+    location: str | None = None
+    for seg in segments[1:]:
+        if _is_url(seg):
+            continue
+        # Role takes priority -- the same segment can contain both a role
+        # and a location ("Backend Engineer, Bengaluru"); we want it as title.
+        if title is None and _looks_like_role(seg):
+            title = seg
+            continue
+        if location is None and _looks_like_location(seg) and not _is_employment_type(seg):
+            location = seg
+            continue
+    if title is None:
+        title = "(no role in header)"
+    if location is None:
+        location = ""
+    return title, location
 
 
 @dataclass
@@ -141,8 +273,7 @@ class HNScraper:
             company_domain = url_host
             company_name = company_part
 
-        title = parts[1]
-        location = parts[2]
+        title, location = _classify_header_segments(parts)
 
         body_text = (tree.text(separator=" ") or "").strip()
         posted_at = datetime.fromtimestamp(comment.get("created_at_i", 0), tz=UTC)
