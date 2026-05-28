@@ -61,16 +61,23 @@ def pipeline_run(
     from knockknock.pipeline.runner import PipelineRunner
     from knockknock.pipeline.score import ScoreStage
     from knockknock.pipeline.stage import Stage, StageContext
+    from knockknock.pipeline.tailor import TailorStage
     from knockknock.rate_limit.gemini_limiter import (
         GeminiLimiter,
         LimiterConfig,
         ModelQuota,
     )
+    from knockknock.resume.manifest import load_manifest
     from knockknock.scrapers.registry import build_scrapers
 
     settings = Settings()
     configure_logging(level=settings.log_level, json=settings.runtime == "cloud")
     prefs = load_preferences(Path(settings.preferences_path))
+    # Load resume manifest once at startup so a broken YAML fails fast --
+    # before we open a DB session or burn any API quota. Path is relative
+    # to the CWD; Phase 11 will plumb this through Settings the same way
+    # ``preferences_path`` already is.
+    resume_manifest = load_manifest(Path("resumes/manifest.yaml"))
     engine = make_sync_engine(settings.database_url)
 
     # Gemini client is built outside the session_scope because it owns no DB
@@ -130,6 +137,7 @@ def pipeline_run(
                 limiter=gemini_limiter,
             ),
             EnrichStage(session=session, chain=phonebook_chain),
+            TailorStage(session=session, manifest=resume_manifest),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
