@@ -128,6 +128,81 @@ def scraper_test(
         _scraper_test_write(selected, limit=limit, settings=settings)
 
 
+@scraper_app.command("audit")
+def scraper_audit(
+    source: str = typer.Option(
+        "hn",
+        "--source",
+        help="Which scraper to audit.",
+    ),
+    runs: int = typer.Option(
+        3,
+        "--runs",
+        min=1,
+        help="Number of audit runs (>=2 enables cross-run regression detection).",
+    ),
+    output: str = typer.Option(
+        "audits",
+        "--output",
+        help="Directory for JSONL dumps and Markdown/JSON reports.",
+    ),
+) -> None:
+    """Field-level data-quality audit for a scraper.
+
+    Runs the scraper N times, persists each run's full payload as JSONL,
+    and emits a Markdown + JSON report covering per-field null rates,
+    distinct-value counts, length distributions, and known data-quality
+    heuristics (title-looks-like-location, malformed URLs, duplicate
+    source_job_ids, generic redirector domains, stale posted_at).
+
+    Cross-run regression: any field whose null-rate drifts >10% between
+    consecutive runs is flagged WARN.
+    """
+    import os
+
+    from knockknock.config.preferences import load_preferences
+    from knockknock.logging import configure_logging
+    from knockknock.scrapers.audit import audit_scraper
+    from knockknock.scrapers.registry import build_scrapers
+
+    prefs_path = Path(os.environ.get("KNOCKKNOCK_PREFERENCES_PATH", "config/job_preferences.yaml"))
+    log_level = os.environ.get("KNOCKKNOCK_LOG_LEVEL", "INFO")
+    runtime = os.environ.get("KNOCKKNOCK_RUNTIME", "local")
+    configure_logging(level=log_level, json=runtime == "cloud")
+    prefs = load_preferences(prefs_path)
+
+    all_scrapers = build_scrapers(prefs)
+    selected = [s for s in all_scrapers if s.source.value.lower() == source.lower()]
+    if not selected:
+        typer.secho(
+            f"No enabled scraper matches --source={source!r}.",
+            fg=typer.colors.RED,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+    typer.secho(
+        f"Running {runs} audit run(s) for source={source!r}; output={output}",
+        fg=typer.colors.CYAN,
+        bold=True,
+    )
+    report = audit_scraper(selected[0], runs=runs, output_dir=Path(output))
+
+    # Brief stdout summary so an interactive run gives signal immediately.
+    for r in report.runs:
+        typer.echo(f"\nRun {r.run_index}: jobs={r.jobs_emitted}")
+        for f_ in r.findings:
+            typer.secho(
+                f"  [{f_.severity}] {f_.field}: {f_.message}",
+                fg=typer.colors.YELLOW if f_.severity == "WARN" else typer.colors.RED,
+            )
+    if report.cross_run_findings:
+        typer.echo("\nCross-run regressions:")
+        for f_ in report.cross_run_findings:
+            typer.secho(f"  [{f_.severity}] {f_.field}: {f_.message}", fg=typer.colors.YELLOW)
+    typer.secho(f"\nReports written under {output}/", fg=typer.colors.GREEN)
+
+
 def _scraper_test_dry_run(selected: list, limit: int) -> None:  # type: ignore[type-arg]
     """Print scraped jobs to stdout without touching the DB."""
     from knockknock.scrapers.base import ScrapedJob
@@ -157,6 +232,15 @@ def _print_job(idx: int, job) -> None:  # type: ignore[no-untyped-def]
     typer.echo(f"    location : {job.location}")
     typer.echo(f"    source   : {job.source.value}/{job.source_job_id}")
     typer.echo(f"    apply_url: {job.apply_url}")
+    if job.salary_min is not None:
+        if job.salary_max is not None and job.salary_max != job.salary_min:
+            comp = f"{job.salary_min:,}-{job.salary_max:,}"
+        else:
+            comp = f"{job.salary_min:,}"
+        typer.echo(
+            f"    salary   : {comp} {job.salary_currency} ({job.salary_period}) "
+            f"-- raw: {job.salary_raw!r}"
+        )
     if job.posted_at is not None:
         typer.echo(f"    posted   : {job.posted_at.isoformat()}")
     if job.description:

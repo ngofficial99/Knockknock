@@ -64,6 +64,7 @@ credentials.json
 # Data / artifacts
 data/
 artifacts/
+audits/
 *.sqlite
 *.db
 logs/
