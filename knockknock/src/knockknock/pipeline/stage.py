@@ -20,13 +20,20 @@ class StageContext:
 
 @dataclass(frozen=True, slots=True)
 class StageResult:
-    """Counters a stage reports back to the runner."""
+    """Counters a stage reports back to the runner.
+
+    ``halted_reason`` is set when a stage stopped processing early (e.g. the
+    score stage hit a Gemini RPD/safety-ceiling cap). It surfaces in the
+    digest so an operator can see "score halted at job 17/50" without
+    digging through logs. ``None`` means the stage finished normally.
+    """
 
     stage: str
     processed: int
     advanced: int
     rejected: int
     errors: int
+    halted_reason: str | None = None
 
 
 class Stage(Protocol):
