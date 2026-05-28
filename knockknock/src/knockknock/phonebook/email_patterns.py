@@ -53,18 +53,32 @@ def _normalise_domain(raw: str) -> str:
 
 
 def careers_fallback_email(domain: str) -> str:
-    """Return ``careers@<normalised-domain>``. Raise on empty domain.
+    """Return ``"careers@<d>, hr@<d>"`` -- comma-joined list of safe aliases.
 
     This is the *last-resort* address used by the enrich stage when
     Apollo + Hunter + founder-guess have all returned nothing. We always
     have something to write into ``phonebook.careers_email`` so jobs
     with a known domain can never get stuck at ENRICH_FAILED for lack of
     a recipient.
+
+    We return *two* aliases because at small companies one of them
+    typically doesn't exist:
+
+    - Larger / well-structured orgs route ``careers@`` to a recruiting
+      inbox -- great when it exists, but pure no-op when it doesn't.
+    - Small startups often only have ``hr@`` or even just the founder.
+
+    Sending to both via ``Cc`` gives us two shots at a real inbox at
+    near-zero downside (worst case: one bounce, one delivered). The
+    drafter (Phase 8) splits this string on ``", "`` at send time.
+
+    Raises :class:`ValueError` on empty/whitespace-only domain --
+    without one we cannot derive *any* address.
     """
     norm = _normalise_domain(domain)
     if not norm:
         raise ValueError("careers_fallback_email requires a non-empty domain")
-    return f"careers@{norm}"
+    return f"careers@{norm}, hr@{norm}"
 
 
 def guess_founder_email(name: str, domain: str) -> str | None:

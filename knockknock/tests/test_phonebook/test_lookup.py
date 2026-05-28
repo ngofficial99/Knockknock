@@ -93,7 +93,9 @@ def test_lookup_uses_apollo_with_email(db_session: Session) -> None:
     outcome = chain.resolve(session=db_session, company=company)
     assert outcome.founder_email == "aarav@acme.io"
     assert outcome.founder_name == "Aarav Singh"
-    assert outcome.careers_email == "careers@acme.io"
+    # careers_email is the comma-joined fallback so the drafter can Cc
+    # both safe aliases (Task 6.x: hr@ addition).
+    assert outcome.careers_email == "careers@acme.io, hr@acme.io"
     assert outcome.source is PhonebookSource.APOLLO
     assert hunter.calls == 0
 
@@ -135,7 +137,8 @@ def test_lookup_all_fail_returns_careers_fallback(db_session: Session) -> None:
     outcome = chain.resolve(session=db_session, company=company)
     assert outcome.founder_email is None
     assert outcome.founder_name is None
-    assert outcome.careers_email == "careers@acme.io"
+    # Both safe aliases, comma-joined; drafter splits on ", " for Cc.
+    assert outcome.careers_email == "careers@acme.io, hr@acme.io"
     assert outcome.source is PhonebookSource.SEED
 
 

@@ -2,10 +2,16 @@
 
 These are the safety-net of the phonebook chain: after Apollo and Hunter
 have failed, ``careers_fallback_email`` MUST always return a writable
-``careers@<domain>`` string so the enrich stage never leaves a job
-without a recipient. ``guess_founder_email`` is best-effort -- returning
-``None`` is fine; returning something obviously wrong (single-token
-names, missing domain) is not.
+recipient string so the enrich stage never leaves a job without a
+contact. The fallback returns BOTH ``careers@<domain>`` AND
+``hr@<domain>`` as a comma-joined list (``"careers@x, hr@x"``); the
+drafter (Phase 8) splits on ``", "`` to populate Cc. This gives us two
+shots at hitting a real inbox at small companies where one of the two
+aliases may not even exist.
+
+``guess_founder_email`` is best-effort -- returning ``None`` is fine;
+returning something obviously wrong (single-token names, missing
+domain) is not.
 """
 
 from __future__ import annotations
@@ -18,16 +24,23 @@ from knockknock.phonebook.email_patterns import (
 )
 
 
+def test_careers_fallback_returns_comma_list_of_careers_and_hr() -> None:
+    """Both aliases, comma-joined, careers first (preferred), then hr."""
+    assert careers_fallback_email("acme.io") == "careers@acme.io, hr@acme.io"
+
+
 def test_careers_fallback_lowercases_domain() -> None:
-    assert careers_fallback_email("Acme.IO") == "careers@acme.io"
+    assert careers_fallback_email("Acme.IO") == "careers@acme.io, hr@acme.io"
 
 
 def test_careers_fallback_strips_scheme_and_www() -> None:
-    assert careers_fallback_email("https://www.example.com/") == "careers@example.com"
+    assert (
+        careers_fallback_email("https://www.example.com/") == "careers@example.com, hr@example.com"
+    )
 
 
 def test_careers_fallback_strips_path() -> None:
-    assert careers_fallback_email("https://acme.io/jobs/123") == "careers@acme.io"
+    assert careers_fallback_email("https://acme.io/jobs/123") == "careers@acme.io, hr@acme.io"
 
 
 def test_careers_fallback_raises_on_empty_domain() -> None:
