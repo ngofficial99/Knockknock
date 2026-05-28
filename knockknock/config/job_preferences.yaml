@@ -1,0 +1,82 @@
+candidate:
+  name: "Nishant Gupta"
+  current_role: "Backend Engineer at Zeotap"
+  years_experience: 4
+  location: "Bengaluru, India"
+
+target:
+  locations:
+    - "Bengaluru"
+    - "Bangalore"
+    - "Remote (India)"
+  titles_allow:
+    - "Software Engineer"
+    - "Software Development Engineer"
+    - "Backend Engineer"
+    - "Full Stack Engineer"
+    - "Platform Engineer"
+  titles_deny:
+    - "Manager"
+    - "Lead"
+    - "Director"
+    - "Intern"
+    - "Frontend Engineer"
+  seniority_allow:
+    - "Mid"
+    - "Senior"
+    - "SDE 2"
+    - "SDE 3"
+  # Errata E.2: SERIES_C_PLUS was split into SERIES_C and LATE_STAGE.
+  company_size_allow:
+    - "SEED"
+    - "SERIES_A"
+    - "SERIES_B"
+    - "SERIES_C"
+    - "LATE_STAGE"
+
+skills:
+  must_have_any:
+    - "Python"
+    - "Java"
+    - "Go"
+    - "Node.js"
+    - "TypeScript"
+  nice_to_have:
+    - "Kafka"
+    - "Kubernetes"
+    - "AWS"
+    - "GCP"
+    - "Postgres"
+    - "Redis"
+
+scoring:
+  min_score_to_draft: 70
+  weight_skill_match: 40
+  weight_seniority_match: 25
+  weight_location_match: 20
+  weight_company_stage: 15
+
+limits:
+  daily_drafts_cap: 40
+  hourly_discover_cap: 50
+  gemini_pro_rpd_ceiling: 500
+
+sources:
+  hn:
+    enabled: true
+    months_lookback: 2
+  wellfound:
+    enabled: true
+    query: "backend OR python OR java location:bangalore"
+  yc_waas:
+    enabled: true
+    query: "backend bangalore"
+  greenhouse:
+    enabled: true
+    boards: ["razorpay", "swiggy", "cred", "groww"]
+  lever:
+    enabled: true
+    boards: ["postman", "atlan"]
+  ashby:
+    enabled: true
+    boards: ["zerodha"]

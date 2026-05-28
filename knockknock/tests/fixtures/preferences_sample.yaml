@@ -1,0 +1,43 @@
+candidate:
+  name: "Test User"
+  current_role: "Engineer"
+  years_experience: 3
+  location: "Bengaluru"
+target:
+  locations: ["Bengaluru"]
+  titles_allow: ["Software Engineer"]
+  titles_deny: ["Manager"]
+  seniority_allow: ["Mid"]
+  company_size_allow: ["SEED", "SERIES_A"]
+skills:
+  must_have_any: ["Python"]
+  nice_to_have: []
+scoring:
+  min_score_to_draft: 70
+  weight_skill_match: 40
+  weight_seniority_match: 25
+  weight_location_match: 20
+  weight_company_stage: 15
+limits:
+  daily_drafts_cap: 40
+  hourly_discover_cap: 50
+  gemini_pro_rpd_ceiling: 500
+sources:
+  hn:
+    enabled: true
+    months_lookback: 1
+  wellfound:
+    enabled: false
+    query: ""
+  yc_waas:
+    enabled: false
+    query: ""
+  greenhouse:
+    enabled: false
+    boards: []
+  lever:
+    enabled: false
+    boards: []
+  ashby:
+    enabled: false
+    boards: []
