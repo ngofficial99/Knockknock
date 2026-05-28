@@ -41,6 +41,7 @@ def pipeline_run(
 
     from knockknock.clients.apollo import ApolloClient
     from knockknock.clients.gemini import build_gemini_client
+    from knockknock.clients.gmail import GmailClient, build_gmail_service
     from knockknock.clients.hunter import HunterClient
     from knockknock.config.preferences import load_preferences
     from knockknock.config.secrets import build_secrets_client
@@ -56,6 +57,7 @@ def pipeline_run(
     from knockknock.phonebook.lookup import PhonebookLookup
     from knockknock.phonebook.models import FounderHit
     from knockknock.pipeline.discover import DiscoverStage
+    from knockknock.pipeline.draft import DraftStage
     from knockknock.pipeline.enrich import EnrichStage
     from knockknock.pipeline.pre_filter import PreFilterStage
     from knockknock.pipeline.runner import PipelineRunner
@@ -84,6 +86,18 @@ def pipeline_run(
     # state and the SDK import is ~250ms; doing it once amortises it.
     secrets = build_secrets_client(settings)
     gemini_client = build_gemini_client(secrets.get("gemini-api-key"))
+
+    # Gmail is similarly stateless wrt the DB. We build the OAuth-refreshed
+    # service once per run so the access-token refresh happens upfront --
+    # if it's going to fail (expired refresh token), we want the failure
+    # before any pipeline work begins. ``prefs.candidate.email`` is the
+    # ``From:`` address for every draft this stage creates.
+    gmail_service = build_gmail_service(
+        client_id=secrets.get("gmail-oauth-client-id"),
+        client_secret=secrets.get("gmail-oauth-client-secret"),
+        refresh_token=secrets.get("gmail-oauth-refresh-token"),
+    )
+    gmail_client = GmailClient(service=gmail_service, sender_email=prefs.candidate.email)
 
     with session_scope(engine) as session:
         sync_blacklist_from_yaml(session, Path(settings.blacklist_path))
@@ -138,6 +152,13 @@ def pipeline_run(
             ),
             EnrichStage(session=session, chain=phonebook_chain),
             TailorStage(session=session, manifest=resume_manifest),
+            DraftStage(
+                session=session,
+                prefs=prefs,
+                gemini=gemini_client,
+                limiter=gemini_limiter,
+                gmail=gmail_client,
+            ),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
