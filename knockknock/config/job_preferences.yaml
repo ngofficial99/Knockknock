@@ -5,7 +5,7 @@ candidate:
   # NOTE: Gmail appends its own signature automatically; the Phase 8 prompt
   # therefore does NOT generate a sign-off block in the body.
   email: "ngofficial99@gmail.com"
-  current_role: "Software Engineer at Zeotap (Platform Engineering)"
+  current_role: "Software Engineer at Zeotap"
   years_experience: 2
   location: "Bengaluru, India"
   # Optional one-line elevator pitch fed into the Pro draft prompt.
@@ -17,14 +17,17 @@ target:
     - "Bangalore"
     - "Remote (India)"
   # Token-boundary match (see filter/rules.py:_token_match). Single-word
-  # tokens like "Engineer" hit "Senior Engineer", "Founding Engineer", etc.
-  # without matching "Engineering" (substring would).
+  # tokens like "Backend" hit "Senior Backend Engineer", "Backend
+  # Developer", etc., without matching substrings like "Engineering".
+  # Narrowed to backend/platform/infra signals -- a job titled
+  # "Backend Engineer" still matches via "Backend".
   titles_allow:
-    - "Engineer"
-    - "Developer"
+    - "Backend"
+    - "Platform"
+    - "Infrastructure"
+    - "Distributed"
     - "SDE"
     - "SWE"
-    - "Programmer"
   titles_deny:
     - "Manager"
     - "Lead"
@@ -36,6 +39,10 @@ target:
     - "iOS"
     - "Android"
     - "Designer"
+    # Modelling / research roles -- not the skill set on the resume.
+    - "Data Scientist"
+    - "ML Researcher"
+    - "Research Scientist"
   seniority_allow:
     - "Mid"
     - "Senior"
@@ -50,19 +57,25 @@ target:
     - "LATE_STAGE"
 
 skills:
+  # Job description must mention >=1 of these to clear the pre-filter.
+  # Dropped Node.js + TypeScript -- not on the resume. Kept Go as a
+  # stretch language (Java/Go syntactic neighbours).
   must_have_any:
     - "Python"
     - "Java"
     - "Go"
-    - "Node.js"
-    - "TypeScript"
   nice_to_have:
+    - "Vert.x"
+    - "FastAPI"
     - "Kafka"
+    - "RabbitMQ"
     - "Kubernetes"
-    - "AWS"
     - "GCP"
+    - "AWS"
+    - "Terraform"
     - "Postgres"
     - "Redis"
+    - "BigQuery"
 
 scoring:
   min_score_to_draft: 70
