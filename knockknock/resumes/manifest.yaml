@@ -1,0 +1,41 @@
+# Resume variant manifest. Loaded at startup; the tailor stage picks the
+# best-matching variant for each job based on tag overlap.
+#
+# `tag_dictionary` maps job-token synonyms → canonical variant tags so we
+# can compare "k8s in JD" against "kubernetes" tag without hardcoding equivalence.
+
+tag_dictionary:
+  k8s: kubernetes
+  "distributed systems": distributed
+  ml: llm
+  "machine learning": llm
+  golang: go
+  nodejs: node
+  typescript: ts
+  reactjs: react
+  postgres: postgresql
+  pg: postgresql
+  gcp: cloud
+  aws: cloud
+  azure: cloud
+
+variants:
+  - key: backend-distributed
+    pdf_path: backend-distributed.pdf
+    priority: 100
+    tags: [backend, distributed, python, go, kafka, kubernetes, postgresql, microservices]
+
+  - key: backend-llm
+    pdf_path: backend-llm.pdf
+    priority: 100
+    tags: [backend, python, llm, fastapi, rag, langchain]
+
+  - key: backend-fintech
+    pdf_path: backend-fintech.pdf
+    priority: 90
+    tags: [backend, java, python, postgresql, kafka, payments, ledger]
+
+  - key: backend-generic
+    pdf_path: backend-generic.pdf
+    priority: 50
+    tags: [backend, python, postgresql, rest, api]
