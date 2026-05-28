@@ -1,0 +1,12 @@
+# Companies and patterns to never apply to.
+# `pattern` is matched against the lowercased company name OR domain via SQL ILIKE.
+# Use % for wildcards (e.g. "%consulting%" rejects anything containing "consulting").
+entries:
+  - pattern: "zeotap"
+    reason: "current employer"
+  - pattern: "%consulting%"
+    reason: "consultancies, not product startups"
+  - pattern: "%staffing%"
+    reason: "staffing agencies"
+  - pattern: "%recruiting%"
+    reason: "recruiter spam"
