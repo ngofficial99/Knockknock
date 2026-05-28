@@ -37,18 +37,26 @@ def pipeline_run(
     blacklist YAML is synced into ``companies_blacklist`` and a
     ``BlacklistMatcher`` snapshot is loaded for the ``RuleEngine``.
     """
+    import httpx
+
+    from knockknock.clients.apollo import ApolloClient
     from knockknock.clients.gemini import build_gemini_client
+    from knockknock.clients.hunter import HunterClient
     from knockknock.config.preferences import load_preferences
     from knockknock.config.secrets import build_secrets_client
     from knockknock.config.settings import Settings
     from knockknock.db.engine import make_sync_engine
     from knockknock.db.enums import GeminiModel
     from knockknock.db.session import session_scope
+    from knockknock.exceptions import ConfigError
     from knockknock.filter.blacklist import BlacklistMatcher, sync_blacklist_from_yaml
     from knockknock.filter.rules import RuleEngine
     from knockknock.logging import configure_logging
     from knockknock.observability.metrics import begin_run, finalize_run
+    from knockknock.phonebook.lookup import PhonebookLookup
+    from knockknock.phonebook.models import FounderHit
     from knockknock.pipeline.discover import DiscoverStage
+    from knockknock.pipeline.enrich import EnrichStage
     from knockknock.pipeline.pre_filter import PreFilterStage
     from knockknock.pipeline.runner import PipelineRunner
     from knockknock.pipeline.score import ScoreStage
@@ -88,6 +96,24 @@ def pipeline_run(
         )
         gemini_limiter = GeminiLimiter(session, limiter_config)
 
+        # Phonebook providers: Apollo is required (we have a master key), Hunter
+        # is optional. When the Hunter secret is absent we substitute a no-op
+        # stub so the chain still works -- it just falls through Apollo →
+        # pattern-guess → careers fallback without ever calling Hunter.
+        phonebook_http = httpx.Client()
+        apollo_client = ApolloClient(api_key=secrets.get("apollo-api-key"), http=phonebook_http)
+        try:
+            hunter_key = secrets.get("hunter-api-key")
+            hunter_client: object = HunterClient(api_key=hunter_key, http=phonebook_http)
+        except ConfigError:
+
+            class _NoHunter:
+                def find_founders(self, *, domain: str) -> list[FounderHit]:  # noqa: ARG002
+                    return []
+
+            hunter_client = _NoHunter()
+        phonebook_chain = PhonebookLookup(apollo=apollo_client, hunter=hunter_client)  # type: ignore[arg-type]
+
         run_id = begin_run(session)
         scrapers = build_scrapers(prefs)
         stages: list[Stage] = [
@@ -103,9 +129,11 @@ def pipeline_run(
                 gemini=gemini_client,
                 limiter=gemini_limiter,
             ),
+            EnrichStage(session=session, chain=phonebook_chain),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
+        phonebook_http.close()
 
     if not once:
         typer.echo("non-once mode not implemented yet; phase 12 will add scheduler integration")
