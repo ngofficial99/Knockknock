@@ -69,15 +69,15 @@ def test_telegram_message_has_email_draft_fk() -> None:
     regenerated draft is a new row but shares the same ``job_id``.
     """
     table = SQLModel.metadata.tables["telegram_messages"]
-    assert (
-        "email_draft_id" in table.c
-    ), "telegram_messages must have an email_draft_id column (Phase 9 schema)"
+    assert "email_draft_id" in table.c, (
+        "telegram_messages must have an email_draft_id column (Phase 9 schema)"
+    )
     col = table.c.email_draft_id
     assert col.nullable, "email_draft_id should be nullable (non-draft messages exist)"
     target_tables = {fk.column.table.name for fk in col.foreign_keys}
-    assert (
-        "email_drafts" in target_tables
-    ), f"email_draft_id must FK to email_drafts; got {target_tables}"
+    assert "email_drafts" in target_tables, (
+        f"email_draft_id must FK to email_drafts; got {target_tables}"
+    )
 
 
 def test_telegram_message_has_email_draft_index() -> None:
@@ -86,6 +86,6 @@ def test_telegram_message_has_email_draft_index() -> None:
     """
     table = SQLModel.metadata.tables["telegram_messages"]
     index_names = {i.name for i in table.indexes}
-    assert (
-        "ix_tg_email_draft" in index_names
-    ), f"telegram_messages needs ix_tg_email_draft; got {index_names}"
+    assert "ix_tg_email_draft" in index_names, (
+        f"telegram_messages needs ix_tg_email_draft; got {index_names}"
+    )
