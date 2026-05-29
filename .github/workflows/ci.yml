@@ -26,7 +26,11 @@ jobs:
         run: uv python install 3.11
 
       - name: Install deps
-        run: uv sync --frozen
+        # --all-extras pulls in [telegram] (python-telegram-bot) which the
+        # bot service needs. Without it mypy can't resolve `import telegram`
+        # in clients/telegram.py and pytest collection fails on the bot
+        # test modules.
+        run: uv sync --frozen --all-extras
 
       - name: Ruff lint
         run: uv run ruff check src tests
