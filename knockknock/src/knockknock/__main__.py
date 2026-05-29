@@ -62,6 +62,7 @@ def pipeline_run(
     from knockknock.pipeline.pre_filter import PreFilterStage
     from knockknock.pipeline.runner import PipelineRunner
     from knockknock.pipeline.score import ScoreStage
+    from knockknock.pipeline.send import SendStage
     from knockknock.pipeline.stage import Stage, StageContext
     from knockknock.pipeline.tailor import TailorStage
     from knockknock.rate_limit.gemini_limiter import (
@@ -159,6 +160,12 @@ def pipeline_run(
                 limiter=gemini_limiter,
                 gmail=gmail_client,
             ),
+            # Phase 9: pick up APPROVED rows the Telegram bot flipped
+            # in between pipeline runs and actually send their Gmail
+            # drafts. Runs after DraftStage because (a) it shares the
+            # GmailClient and (b) the bot can only approve a draft that
+            # DraftStage already created.
+            SendStage(session=session, gmail=gmail_client),
         ]
         summary = PipelineRunner(stages=stages).run_once(StageContext(run_id=run_id))
         finalize_run(session, run_id, summary.results)
