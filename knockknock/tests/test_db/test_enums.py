@@ -45,9 +45,18 @@ def test_job_status_has_terminal_states() -> None:
     assert JobStatus.ERROR in JobStatus
 
 
-def test_job_status_no_approved_member() -> None:
-    """Errata E.2: APPROVED is a draft state, not a job status."""
-    assert "APPROVED" not in JobStatus.__members__
+def test_job_status_has_approved_member() -> None:
+    """Phase 9 (DB-mediated approval flow): APPROVED is the post-tap,
+    pre-Gmail-send job status. The user-tap on the Telegram inline button
+    flips ``job_applications.status`` from ``AWAITING_APPROVAL`` to
+    ``APPROVED``; the pipeline's ``SendStage`` then transitions
+    ``APPROVED -> SENT`` after Gmail accepts the send. This supersedes
+    Errata E.2's earlier "APPROVED is only a draft state" rule.
+    """
+    assert JobStatus.APPROVED.value == "APPROVED"
+    # APPROVED sits between AWAITING_APPROVAL and SENT in the lifecycle.
+    assert JobStatus.AWAITING_APPROVAL in JobStatus
+    assert JobStatus.SENT in JobStatus
 
 
 def test_email_draft_state_members() -> None:

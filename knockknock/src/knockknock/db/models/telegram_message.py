@@ -15,12 +15,25 @@ from knockknock.db.models._base import pg_enum
 
 class TelegramMessage(SQLModel, table=True):
     __tablename__ = "telegram_messages"
-    __table_args__ = (Index("ix_tg_job", "job_id"),)
+    __table_args__ = (
+        Index("ix_tg_job", "job_id"),
+        # Phase 9: NotifyPoller does a LEFT JOIN against this column to
+        # find email_drafts that have not yet had a preview message sent.
+        Index("ix_tg_email_draft", "email_draft_id"),
+    )
 
     id: int | None = Field(default=None, sa_column=Column(BigInteger, primary_key=True))
     job_id: int | None = Field(
         default=None,
         sa_column=Column(BigInteger, ForeignKey("job_applications.id", ondelete="SET NULL")),
+    )
+    # Phase 9: link a Telegram message to the specific email_draft it
+    # previewed/approved/rejected. Nullable -- not every TG message is
+    # tied to a draft (e.g. DIGEST, ALERT). SET NULL on draft delete so
+    # we keep the audit trail even after draft cleanup.
+    email_draft_id: int | None = Field(
+        default=None,
+        sa_column=Column(BigInteger, ForeignKey("email_drafts.id", ondelete="SET NULL")),
     )
     direction: TelegramDirection = Field(
         sa_column=Column(pg_enum(TelegramDirection, "telegram_direction"), nullable=False)

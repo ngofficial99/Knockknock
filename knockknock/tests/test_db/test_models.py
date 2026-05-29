@@ -55,3 +55,37 @@ def test_active_draft_partial_index_uses_generated_predicate() -> None:
     where = idx.dialect_options.get("postgresql", {}).get("where")
     assert where is not None
     assert "GENERATED" in str(where) or "DRAFT_CREATED" in str(where)
+
+
+def test_telegram_message_has_email_draft_fk() -> None:
+    """Phase 9: ``telegram_messages.email_draft_id`` is a nullable FK to
+    ``email_drafts.id``.
+
+    Rationale: the NotifyPoller queries ``email_drafts`` joined with
+    ``telegram_messages`` to find drafts that need a Telegram preview
+    sent (left join, where ``telegram_messages.id IS NULL``). Pinning
+    the FK to the draft (not just the job) lets us answer "has *this
+    specific* draft been previewed yet?" — important because a
+    regenerated draft is a new row but shares the same ``job_id``.
+    """
+    table = SQLModel.metadata.tables["telegram_messages"]
+    assert (
+        "email_draft_id" in table.c
+    ), "telegram_messages must have an email_draft_id column (Phase 9 schema)"
+    col = table.c.email_draft_id
+    assert col.nullable, "email_draft_id should be nullable (non-draft messages exist)"
+    target_tables = {fk.column.table.name for fk in col.foreign_keys}
+    assert (
+        "email_drafts" in target_tables
+    ), f"email_draft_id must FK to email_drafts; got {target_tables}"
+
+
+def test_telegram_message_has_email_draft_index() -> None:
+    """Phase 9: ``ix_tg_email_draft`` on ``email_draft_id`` -- the
+    NotifyPoller's left-join lookup hits this index every poll cycle.
+    """
+    table = SQLModel.metadata.tables["telegram_messages"]
+    index_names = {i.name for i in table.indexes}
+    assert (
+        "ix_tg_email_draft" in index_names
+    ), f"telegram_messages needs ix_tg_email_draft; got {index_names}"

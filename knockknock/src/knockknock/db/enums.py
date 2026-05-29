@@ -49,6 +49,10 @@ class JobStatus(StrEnum):
     TAILORED = "TAILORED"
     DRAFTED = "DRAFTED"
     AWAITING_APPROVAL = "AWAITING_APPROVAL"
+    # Phase 9: user-tapped Approve in Telegram. Distinct from SENT --
+    # the row is queued for the pipeline's SendStage to call Gmail
+    # ``messages.send`` on the existing draft.
+    APPROVED = "APPROVED"
     SENT = "SENT"
     USER_REJECTED = "USER_REJECTED"
     ERROR = "ERROR"
