@@ -94,12 +94,17 @@ sources:
     enabled: true
     months_lookback: 2
   wellfound:
-    enabled: false  # flip to true once Phase 10 storage_state.json is bootstrapped
+    # Public listings only -- no login / storage_state.json required.
+    # Rendered via PlaywrightFetcher (Chromium headless) in the registry.
+    enabled: true
     location: "Bangalore"
     role_types: ["engineering"]
     remote: true
   yc_waas:
-    enabled: false  # flip to true once Phase 10 storage_state.json is bootstrapped
+    # Public workatastartup.com listings only -- no YC login.
+    # Description is synthesized from public title+company+batch (gated
+    # full descriptions are NOT scraped).
+    enabled: true
     location: "India"
     role: "engineer"
   greenhouse:
