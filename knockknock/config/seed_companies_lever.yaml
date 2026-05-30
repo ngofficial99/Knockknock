@@ -1,0 +1,10 @@
+# Lever-hosted boards. ``slug`` is the segment in
+# https://api.lever.co/v0/postings/<slug>?mode=json
+#
+# Placeholder set chosen for Phase 10. Expand once smoke runs confirm
+# the slugs respond + emit India/Remote postings.
+companies:
+  - slug: groww
+    name: Groww
+  - slug: spinny
+    name: Spinny

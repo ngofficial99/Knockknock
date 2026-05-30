@@ -94,17 +94,20 @@ sources:
     enabled: true
     months_lookback: 2
   wellfound:
-    enabled: true
-    query: "backend OR python OR java location:bangalore"
+    enabled: false  # flip to true once Phase 10 storage_state.json is bootstrapped
+    location: "Bangalore"
+    role_types: ["engineering"]
+    remote: true
   yc_waas:
-    enabled: true
-    query: "backend bangalore"
+    enabled: false  # flip to true once Phase 10 storage_state.json is bootstrapped
+    location: "India"
+    role: "engineer"
   greenhouse:
     enabled: true
-    boards: ["razorpay", "swiggy", "cred", "groww"]
+    company_seed_list_path: "config/seed_companies_greenhouse.yaml"
   lever:
     enabled: true
-    boards: ["postman", "atlan"]
+    company_seed_list_path: "config/seed_companies_lever.yaml"
   ashby:
     enabled: true
-    boards: ["zerodha"]
+    company_seed_list_path: "config/seed_companies_ashby.yaml"

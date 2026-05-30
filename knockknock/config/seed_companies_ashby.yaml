@@ -1,0 +1,10 @@
+# Ashby-hosted boards. ``slug`` is the org-token from
+# https://api.ashbyhq.com/posting-api/job-board/<slug>
+#
+# Placeholder set chosen for Phase 10. Expand once smoke runs confirm
+# the slugs respond + emit India/Remote postings.
+companies:
+  - slug: postman
+    name: Postman
+  - slug: hasura
+    name: Hasura

@@ -27,11 +27,11 @@ scoring:
 limits: {daily_drafts_cap: 1, hourly_discover_cap: 1, gemini_pro_rpd_ceiling: 1}
 sources:
   hn: {enabled: true, months_lookback: 1}
-  wellfound: {enabled: false, query: ""}
-  yc_waas: {enabled: false, query: ""}
-  greenhouse: {enabled: false, boards: []}
-  lever: {enabled: false, boards: []}
-  ashby: {enabled: false, boards: []}
+  wellfound: {enabled: false}
+  yc_waas: {enabled: false}
+  greenhouse: {enabled: false}
+  lever: {enabled: false}
+  ashby: {enabled: false}
 """
     f = tmp_path / "p.yaml"
     f.write_text(prefs_text)

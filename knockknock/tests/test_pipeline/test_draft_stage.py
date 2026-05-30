@@ -265,11 +265,11 @@ def _prefs() -> JobPreferences:
             },
             "sources": {
                 "hn": {"enabled": True, "months_lookback": 1},
-                "wellfound": {"enabled": False, "query": ""},
-                "yc_waas": {"enabled": False, "query": ""},
-                "greenhouse": {"enabled": False, "boards": []},
-                "lever": {"enabled": False, "boards": []},
-                "ashby": {"enabled": False, "boards": []},
+                "wellfound": {"enabled": False},
+                "yc_waas": {"enabled": False},
+                "greenhouse": {"enabled": False},
+                "lever": {"enabled": False},
+                "ashby": {"enabled": False},
             },
         }
     )

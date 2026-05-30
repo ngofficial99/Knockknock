@@ -8,6 +8,7 @@ helper reads YAML, raises :class:`ConfigError` for syntax/shape problems and
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Self
 
 import yaml
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
@@ -67,30 +68,67 @@ class Limits(BaseModel):
 
 class HnSource(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    enabled: bool
-    months_lookback: int = Field(ge=1, le=12)
+    enabled: bool = False
+    months_lookback: int = Field(default=1, ge=1, le=12)
 
 
-class QuerySource(BaseModel):
+class WellfoundSource(BaseModel):
+    """Phase 10: structured search params instead of free-text query.
+
+    ``location``/``role_types``/``remote`` are consumed by the
+    Playwright-driven Wellfound scraper to construct the search URL.
+    """
+
     model_config = ConfigDict(extra="forbid")
-    enabled: bool
-    query: str
+    enabled: bool = False
+    location: str = "Bangalore"
+    role_types: list[str] = Field(default_factory=lambda: ["engineering"])
+    remote: bool = True
 
 
-class BoardsSource(BaseModel):
+class YcWaasSource(BaseModel):
+    """Phase 10: structured search params for the YC ``Work at a Startup`` site."""
+
     model_config = ConfigDict(extra="forbid")
-    enabled: bool
-    boards: list[str]
+    enabled: bool = False
+    location: str = "India"
+    role: str = "engineer"
+
+
+class _AtsSource(BaseModel):
+    """Common shape for Greenhouse/Lever/Ashby seed-list driven scrapers."""
+
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool = False
+    company_seed_list_path: Path | None = None
+
+    @model_validator(mode="after")
+    def _require_seed_when_enabled(self) -> Self:
+        if self.enabled and self.company_seed_list_path is None:
+            raise ValueError("company_seed_list_path is required when ATS source is enabled")
+        return self
+
+
+class GreenhouseSource(_AtsSource):
+    """Greenhouse public-board scraper config."""
+
+
+class LeverSource(_AtsSource):
+    """Lever public-postings scraper config."""
+
+
+class AshbySource(_AtsSource):
+    """Ashby public-job-board scraper config."""
 
 
 class Sources(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    hn: HnSource
-    wellfound: QuerySource
-    yc_waas: QuerySource
-    greenhouse: BoardsSource
-    lever: BoardsSource
-    ashby: BoardsSource
+    hn: HnSource = Field(default_factory=HnSource)
+    wellfound: WellfoundSource = Field(default_factory=WellfoundSource)
+    yc_waas: YcWaasSource = Field(default_factory=YcWaasSource)
+    greenhouse: GreenhouseSource = Field(default_factory=GreenhouseSource)
+    lever: LeverSource = Field(default_factory=LeverSource)
+    ashby: AshbySource = Field(default_factory=AshbySource)
 
 
 class JobPreferences(BaseModel):

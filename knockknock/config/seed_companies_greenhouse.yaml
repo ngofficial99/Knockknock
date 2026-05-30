@@ -1,0 +1,12 @@
+# Greenhouse-hosted boards. ``slug`` is the segment in
+# https://boards-api.greenhouse.io/v1/boards/<slug>/jobs
+#
+# Placeholder set chosen for Phase 10. Expand once smoke runs confirm
+# the slugs respond + emit India/Remote postings.
+companies:
+  - slug: razorpay
+    name: Razorpay
+  - slug: cred
+    name: CRED
+  - slug: meesho
+    name: Meesho

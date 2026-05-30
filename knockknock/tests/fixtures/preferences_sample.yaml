@@ -29,16 +29,19 @@ sources:
     months_lookback: 1
   wellfound:
     enabled: false
-    query: ""
+    location: "Bangalore"
+    role_types: ["engineering"]
+    remote: true
   yc_waas:
     enabled: false
-    query: ""
+    location: "India"
+    role: "engineer"
   greenhouse:
     enabled: false
-    boards: []
+    company_seed_list_path: null
   lever:
     enabled: false
-    boards: []
+    company_seed_list_path: null
   ashby:
     enabled: false
-    boards: []
+    company_seed_list_path: null
