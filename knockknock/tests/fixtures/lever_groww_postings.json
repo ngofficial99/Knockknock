@@ -1,0 +1,38 @@
+[
+  {
+    "id": "abc-123",
+    "text": "Backend Engineer (Distributed Systems)",
+    "categories": {
+      "location": "Bengaluru",
+      "commitment": "Full-time",
+      "team": "Engineering"
+    },
+    "hostedUrl": "https://jobs.lever.co/groww/abc-123",
+    "descriptionPlain": "Own our trading engine. Go + Postgres.",
+    "createdAt": 1748390400000
+  },
+  {
+    "id": "def-456",
+    "text": "Frontend Engineer",
+    "categories": {
+      "location": "New York",
+      "commitment": "Full-time",
+      "team": "Engineering"
+    },
+    "hostedUrl": "https://jobs.lever.co/groww/def-456",
+    "descriptionPlain": "React.",
+    "createdAt": 1748476800000
+  },
+  {
+    "id": "ghi-789",
+    "text": "Staff SRE",
+    "categories": {
+      "location": "Remote - India",
+      "commitment": "Full-time",
+      "team": "Infra"
+    },
+    "hostedUrl": "https://jobs.lever.co/groww/ghi-789",
+    "descriptionPlain": "Run our k8s fleet.",
+    "createdAt": 1748563200000
+  }
+]
