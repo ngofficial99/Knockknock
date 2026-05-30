@@ -1,0 +1,32 @@
+{
+  "jobs": [
+    {
+      "id": 4567890,
+      "title": "Senior Backend Engineer",
+      "updated_at": "2026-05-25T11:30:00.000Z",
+      "location": {"name": "Bengaluru, India"},
+      "absolute_url": "https://boards.greenhouse.io/razorpay/jobs/4567890",
+      "content": "&lt;p&gt;Build the &lt;b&gt;payment&lt;/b&gt; rails for India.&lt;/p&gt;&lt;p&gt;Stack: Go, Postgres, Kafka.&lt;/p&gt;",
+      "metadata": [],
+      "departments": [{"name": "Engineering"}]
+    },
+    {
+      "id": 4567891,
+      "title": "Frontend Engineer",
+      "updated_at": "2026-05-26T08:00:00.000Z",
+      "location": {"name": "San Francisco, CA"},
+      "absolute_url": "https://boards.greenhouse.io/razorpay/jobs/4567891",
+      "content": "&lt;p&gt;React + TS in SF.&lt;/p&gt;",
+      "metadata": []
+    },
+    {
+      "id": 4567892,
+      "title": "Site Reliability Engineer",
+      "updated_at": "2026-05-26T09:00:00.000Z",
+      "location": {"name": "Remote — India"},
+      "absolute_url": "https://boards.greenhouse.io/razorpay/jobs/4567892",
+      "content": "&lt;p&gt;Run our k8s clusters from home.&lt;/p&gt;",
+      "metadata": []
+    }
+  ]
+}
