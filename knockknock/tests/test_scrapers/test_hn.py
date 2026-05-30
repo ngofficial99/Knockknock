@@ -28,7 +28,7 @@ def test_hn_scraper_finds_latest_thread_and_parses_jobs() -> None:
     )
 
     scraper = HNScraper(months_lookback=1)
-    jobs = list(scraper.fetch())
+    jobs = list(scraper.scrape())
 
     sources = {j.source for j in jobs}
     assert sources == {JobSource.HN}
@@ -54,7 +54,7 @@ def test_hn_scraper_emits_jobs_when_header_lacks_paren_domain() -> None:
     )
 
     scraper = HNScraper(months_lookback=1)
-    jobs = list(scraper.fetch())
+    jobs = list(scraper.scrape())
     job_ids = {j.source_job_id for j in jobs}
     # 9000011 (BetaCo) has no (domain.tld) but has a beta.test URL -> emitted.
     assert "9000011" in job_ids
@@ -67,7 +67,7 @@ def test_hn_scraper_handles_5xx_with_retry_then_fails() -> None:
     respx.get(SEARCH_URL).mock(return_value=httpx.Response(500))
     scraper = HNScraper(months_lookback=1)
     with pytest.raises(httpx.HTTPError):
-        list(scraper.fetch())
+        list(scraper.scrape())
 
 
 # ---- Phase-3 follow-up: field-mapping bug fix (2026-05-28) ----

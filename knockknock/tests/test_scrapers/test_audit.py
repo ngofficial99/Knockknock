@@ -55,27 +55,29 @@ def _job(
 
 
 class _StubScraper:
-    """Stable stub: every call to fetch() yields the same fixed jobs."""
+    """Stable stub: every call to scrape() yields the same fixed jobs."""
 
     source = JobSource.HN
+    name = "hn"
 
     def __init__(self, jobs: list[ScrapedJob]) -> None:
         self._jobs = jobs
 
-    def fetch(self) -> Iterator[ScrapedJob]:
+    def scrape(self) -> Iterator[ScrapedJob]:
         yield from self._jobs
 
 
 class _DriftScraper:
-    """Stub whose fetch() output changes across runs (simulates regression)."""
+    """Stub whose scrape() output changes across runs (simulates regression)."""
 
     source = JobSource.HN
+    name = "hn"
 
     def __init__(self, run_batches: list[list[ScrapedJob]]) -> None:
         self._batches = run_batches
         self._call_index = 0
 
-    def fetch(self) -> Iterator[ScrapedJob]:
+    def scrape(self) -> Iterator[ScrapedJob]:
         batch = self._batches[self._call_index]
         self._call_index += 1
         yield from batch

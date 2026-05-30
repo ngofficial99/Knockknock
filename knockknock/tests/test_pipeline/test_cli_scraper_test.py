@@ -27,11 +27,12 @@ class _StubHN:
     """
 
     source = JobSource.HN
+    name = "hn"
 
     def __init__(self, jobs: list[ScrapedJob]) -> None:
         self._jobs = jobs
 
-    def fetch(self) -> Iterator[ScrapedJob]:
+    def scrape(self) -> Iterator[ScrapedJob]:
         yield from self._jobs
 
 

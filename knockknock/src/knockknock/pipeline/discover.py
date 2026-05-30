@@ -36,7 +36,7 @@ class DiscoverStage:
         errors = 0
         for scraper in self.scrapers:
             try:
-                for job in scraper.fetch():
+                for job in scraper.scrape():
                     if processed >= self.hourly_cap:
                         log.info("discover.cap_reached", cap=self.hourly_cap)
                         break

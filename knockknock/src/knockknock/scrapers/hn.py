@@ -168,11 +168,19 @@ def _classify_header_segments(segments: list[str]) -> tuple[str, str]:
 
 @dataclass
 class HNScraper:
+    # Class-level identifiers shared by all instances. Kept as ClassVar
+    # equivalents (plain class attrs, not dataclass fields) so the
+    # @dataclass machinery doesn't try to make them per-instance.
     source: JobSource = JobSource.HN
     months_lookback: int = 1
     _client: httpx.Client | None = None
 
-    def fetch(self) -> Iterator[ScrapedJob]:
+    # Log/metric name -- Phase 10 added this to the Scraper Protocol so
+    # we can write ``log.info("hn.thread_found", ...)`` without having
+    # to ``self.source.value.lower()`` everywhere.
+    name: str = "hn"
+
+    def scrape(self) -> Iterator[ScrapedJob]:
         client = self._client or httpx.Client(
             timeout=20.0, headers={"User-Agent": "knockknock/0.1"}
         )

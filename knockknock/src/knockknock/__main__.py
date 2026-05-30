@@ -317,7 +317,7 @@ def _scraper_test_dry_run(selected: list, limit: int) -> None:  # type: ignore[t
     count = 0
     for scraper in selected:
         typer.secho(f"\n=== {scraper.source.value} ===", fg=typer.colors.CYAN, bold=True)
-        for job in scraper.fetch():
+        for job in scraper.scrape():
             if count >= limit:
                 break
             count += 1

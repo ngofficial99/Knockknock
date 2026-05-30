@@ -5,10 +5,25 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from urllib.parse import urlparse
 
 from knockknock.db.enums import CompanySizeBucket, JobSource
+from knockknock.exceptions import KnockknockError
+
+
+class ScraperError(KnockknockError):
+    """A scraper failed in a way that's expected to be transient or recoverable.
+
+    Examples:
+    - Playwright browser launch died,
+    - ``storage_state.json`` missing for an authenticated source,
+    - the page's expected selector never appeared within ``timeout_ms``.
+
+    The discover stage catches this per-scraper so one source's failure
+    doesn't kill the whole hourly run; Phase 11's daily digest surfaces
+    the failure for the operator to act on.
+    """
 
 
 def _normalise_domain(value: str) -> str:
@@ -57,9 +72,21 @@ class ScrapedJob:
         object.__setattr__(self, "company_domain", _normalise_domain(self.company_domain))
 
 
+@runtime_checkable
 class Scraper(Protocol):
-    """A source-specific scraper."""
+    """A source-specific scraper.
+
+    ``scrape()`` (renamed from ``fetch`` in Phase 10) returns a sync
+    iterator. Sources that do async work internally (Playwright)
+    bridge to sync at this boundary via ``asyncio.run`` because the
+    pipeline runner is sync.
+
+    ``name`` is a short, lowercase, log-friendly identifier (e.g.
+    ``"hn"``, ``"greenhouse"``). Use it in structured logs instead of
+    ``source.value.lower()``.
+    """
 
     source: JobSource
+    name: str
 
-    def fetch(self) -> Iterator[ScrapedJob]: ...
+    def scrape(self) -> Iterator[ScrapedJob]: ...

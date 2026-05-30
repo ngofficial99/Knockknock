@@ -259,7 +259,7 @@ def _serialise_job(job: ScrapedJob) -> dict[str, Any]:
 def _audit_single_run(scraper: Scraper, run_index: int, output_dir: Path, source: str) -> RunReport:
     """Run the scraper once, dump JSONL, compute the run-level report."""
     started_at = datetime.now(UTC)
-    jobs = list(scraper.fetch())
+    jobs = list(scraper.scrape())
     finished_at = datetime.now(UTC)
 
     # Dump raw payloads to JSONL so we can forensically re-inspect.
